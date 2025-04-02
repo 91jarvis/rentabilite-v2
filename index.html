@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulateur de Seuil de Rentabilité</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .bloc {
+      background-color: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .resultat {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Simulateur de Seuil de Rentabilité</h1>
+  <div class="container">
+    <div class="bloc" id="bloc1">
+      <h2>Scénario Initial</h2>
+      <label>Chiffre d'affaires unitaire (€)</label>
+      <input type="number" id="prix1">
+      <label>Coût variable unitaire (€)</label>
+      <input type="number" id="cv1">
+      <label>Charges fixes (€)</label>
+      <input type="number" id="cf1">
+      <div class="resultat" id="result1"></div>
+    </div>
+    <div class="bloc" id="bloc2">
+      <h2>Scénario Simulé</h2>
+      <label>Chiffre d'affaires unitaire (€)</label>
+      <input type="number" id="prix2">
+      <label>Coût variable unitaire (€)</label>
+      <input type="number" id="cv2">
+      <label>Charges fixes (€)</label>
+      <input type="number" id="cf2">
+      <div class="resultat" id="result2"></div>
+    </div>
+  </div>
+
+  <canvas id="graphique" height="100"></canvas>
+
+  <script>
+    const inputs = document.querySelectorAll('input');
+    const result1 = document.getElementById('result1');
+    const result2 = document.getElementById('result2');
+
+    function calculSR(prix, cv, cf) {
+      const mcv = prix - cv;
+      if (mcv <= 0) return null;
+      return cf / mcv;
+    }
+
+    function majAffichage() {
+      const p1 = parseFloat(document.getElementById('prix1').value);
+      const cv1 = parseFloat(document.getElementById('cv1').value);
+      const cf1 = parseFloat(document.getElementById('cf1').value);
+      const p2 = parseFloat(document.getElementById('prix2').value);
+      const cv2 = parseFloat(document.getElementById('cv2').value);
+      const cf2 = parseFloat(document.getElementById('cf2').value);
+
+      const sr1 = calculSR(p1, cv1, cf1);
+      const sr2 = calculSR(p2, cv2, cf2);
+
+      result1.textContent = sr1 ? `Seuil de rentabilité : ${sr1.toFixed(2)} unités` : "Valeurs invalides";
+      result2.textContent = sr2 ? `Seuil de rentabilité : ${sr2.toFixed(2)} unités` : "Valeurs invalides";
+
+      if (sr1 && sr2) {
+        majGraphique(p1, cv1, cf1, sr1, p2, cv2, cf2, sr2);
+      }
+    }
+
+    inputs.forEach(input => input.addEventListener('input', majAffichage));
+
+    let chart;
+
+    function majGraphique(p1, cv1, cf1, sr1, p2, cv2, cf2, sr2) {
+      const maxQ = Math.ceil(Math.max(sr1, sr2) * 1.5);
+      const labels = Array.from({length: maxQ}, (_, i) => i);
+
+      const data1 = labels.map(q => (p1 * q) - (cv1 * q) - cf1);
+      const data2 = labels.map(q => (p2 * q) - (cv2 * q) - cf2);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById('graphique'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Scénario Initial',
+              data: data1,
+              borderColor: 'blue',
+              borderWidth: 2,
+              fill: false
+            },
+            {
+              label: 'Scénario Simulé',
+              data: data2,
+              borderColor: 'green',
+              borderWidth: 2,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Comparaison graphique du seuil de rentabilité'
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Quantité vendue (unités)'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Résultat (€)'
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
